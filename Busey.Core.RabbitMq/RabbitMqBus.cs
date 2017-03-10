@@ -34,9 +34,6 @@ namespace Busey.Core.RabbitMq
 
             _connection = _factory.CreateConnection();
             _channel = _connection.CreateModel();
-            var prefetch = GetPrefetch(host.Args);
-            //sets the global QOS for this connection;
-            InitQos(_channel, prefetch, true);
         }
 
 

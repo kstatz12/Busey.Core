@@ -5,12 +5,11 @@ namespace Busey.Core.RabbitMq
 {
     public class RabbitMqHost : IHost
     {
-        public RabbitMqHost(string hostName, string userName, string password, Dictionary<string, object> args)
+        public RabbitMqHost(string hostName, string userName, string password)
         {
             HostName = hostName;
             UserName = userName;
             Password = password;
-            Args = args;
         }
         public string HostName { get; }
 
@@ -18,6 +17,5 @@ namespace Busey.Core.RabbitMq
 
         public string Password { get; }
 
-        public Dictionary<string, object> Args { get; }
     }
 }

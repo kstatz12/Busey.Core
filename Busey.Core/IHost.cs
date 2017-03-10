@@ -9,6 +9,5 @@ namespace Busey.Core
         string HostName { get; }
         string UserName { get; }
         string Password { get; }
-        Dictionary<string, object> Args { get; }
     }
 }
