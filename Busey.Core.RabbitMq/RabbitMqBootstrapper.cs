@@ -9,11 +9,6 @@ namespace Busey.Core.RabbitMq
     {
         private IBus _bus;
 
-        public IBus GetBus()
-        {
-            return _bus;
-        }
-
         public IBootstrapper Init(IHost host)
         {
             _bus = new RabbitMqBus();
@@ -21,10 +16,10 @@ namespace Busey.Core.RabbitMq
             return this;
         }
 
-        public IBootstrapper Start()
+        public IBus Start()
         {
             _bus.Start();
-            return this;
+            return _bus;
         }
 
         public IBootstrapper Stop()

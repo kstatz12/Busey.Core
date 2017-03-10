@@ -9,7 +9,7 @@ namespace Busety.RabbitMq.Test.Reviever
     {
         static void Main(string[] args)
         {
-            var host = new RabbitMqHost("localhost", "guets", "guest");
+            var host = new RabbitMqHost("localhost", "guets", "guest", new System.Collections.Generic.Dictionary<string, object>());
             new RabbitMqBootstrapper().Init(host).WithCommandHandler(new TestCommandHandler()).Start();
         }
     }
