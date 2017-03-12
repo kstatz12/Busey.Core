@@ -1,0 +1,29 @@
+# version format
+version: 1.0.{build}
+
+# branches to build
+branches:
+  # whitelist
+  only:
+    - master
+    - development
+  
+before_build:
+  - nuget restore
+
+build:
+  parallel: true                  # enable MSBuild parallel builds
+  project: Busey.Core.sln      # path to Visual Studio solution or project
+  
+image: Visual Studio 2015
+
+# build platform, i.e. x86, x64, Any CPU. This setting is optional.
+platform: Any CPU
+
+# to add several platforms to build matrix:
+#platform:
+#  - x86
+#  - Any CPU
+
+# build Configuration, i.e. Debug, Release, etc.
+configuration: Release
