@@ -24,7 +24,7 @@ namespace Busey.Core.RabbitMq
 
         public IBootstrapper Stop()
         {
-            _bus.Stop();
+            _bus.Dispose();
             return this;
         }
 

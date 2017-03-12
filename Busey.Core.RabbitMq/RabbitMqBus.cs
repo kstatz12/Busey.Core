@@ -41,11 +41,11 @@ namespace Busey.Core.RabbitMq
         {
             if (args == null)
             {
-                BasicEmit<T>(@event, _channel);
+                BasicEmit(@event, _channel);
             }
             else
             {
-                AdvancedEmit<T>(args, @event, _channel);
+                AdvancedEmit(args, @event, _channel);
             }
         }
 
@@ -53,11 +53,11 @@ namespace Busey.Core.RabbitMq
         {
             if(args == null)
             {
-                BasicEmit<T>(command, _channel);
+                BasicEmit(command, _channel);
             }
             else
             {
-                AdvancedEmit<T>(args, command, _channel);
+                AdvancedEmit(args, command, _channel);
             }
         }
 
@@ -65,11 +65,11 @@ namespace Busey.Core.RabbitMq
         {
             if(args == null)
             {
-                BasicConsume<T>(action);
+                BasicConsume(action);
             }
             else
             {
-                AdvancedConsume<T>(action, args);
+                AdvancedConsume(action, args);
             }
         }
 
@@ -87,11 +87,6 @@ namespace Busey.Core.RabbitMq
         {
             _connection.Dispose();
             _channel.Dispose();
-        }
-
-        private string InitQueue(Type input)
-        {
-            return input.ToQueue().CreateQueue(_channel);
         }
 
         private void InitQos(IModel channel, ushort prefetch = 1, bool global = false)
@@ -121,7 +116,7 @@ namespace Busey.Core.RabbitMq
 
         private void AdvancedConsume<T>(Action<T> action, Dictionary<string, object> args)
         {
-            var queueName = typeof(T).ToQueue();
+            var queueName = GetAdvancedQueueName(args, typeof(T));
             Func<IModel, EventingBasicConsumer> consumer = (channel) =>
             {
                 queueName.CreateQueue(channel);
@@ -144,7 +139,7 @@ namespace Busey.Core.RabbitMq
 
         private void BasicConsume<T>(Action<T> action)
         {
-            string queueName = queueName = typeof(T).ToQueue();
+            var queueName = typeof(T).ToQueue();
             Func<IModel, EventingBasicConsumer> consumer = (channel) =>
             {
                 queueName.CreateQueue(channel);
@@ -159,7 +154,8 @@ namespace Busey.Core.RabbitMq
             };
             _handlers.Add(new Tuple<string, Func<IModel, EventingBasicConsumer>>(queueName, consumer));
         }
-        private string ConfigureExchange(Dictionary<string, object> args, IModel channel)
+
+        private static string ConfigureExchange(Dictionary<string, object> args, IModel channel)
         {
             var exchangeName = args.Where(x => x.Key.ToLower().Equals("exchangename")).Select(x=>x.Value).FirstOrDefault().ToString();
             var exchangeType = args.Where(x => x.Key.ToLower().Equals("exchangetype")).Select(x => x.Value).FirstOrDefault().ToString();
@@ -170,7 +166,7 @@ namespace Busey.Core.RabbitMq
             return exchangeName;
         }
 
-        private string ConfigureRoutingKey(Dictionary<string, object> args)
+        private static string ConfigureRoutingKey(Dictionary<string, object> args)
         {
             return args.Where(x => x.Key.ToLower().Equals("routingkey")).Select(x => x.Value).FirstOrDefault().ToString();
         }
@@ -187,7 +183,7 @@ namespace Busey.Core.RabbitMq
             channel.QueueBind(queue, exchange, routingKey);
         }
 
-        private ushort GetPrefetch(Dictionary<string, object> args)
+        private static ushort GetPrefetch(Dictionary<string, object> args)
         {
             var prefetchRaw = args.Where(x => x.Key.ToLower().Equals("prefetch"))
                                        .Select(x => x.Value)
@@ -195,9 +191,21 @@ namespace Busey.Core.RabbitMq
             if (!ushort.TryParse(prefetchRaw.ToString(), out ushort prefetch))
             {
                 prefetch = 1;
-            };
+            }
             return prefetch;
         }
 
+        private static string GetAdvancedQueueName(Dictionary<string, object> args, Type t)
+        {
+            var queue =
+                args.Where(x => x.Key.ToLower().Equals("queuename")).Select(x => x.Value).FirstOrDefault().ToString();
+            return string.IsNullOrEmpty(queue) ? t.ToQueue() : queue;
+        }
+
+        public void Dispose()
+        {
+            _connection?.Dispose();
+            _channel?.Dispose();
+        }
     }
 }
