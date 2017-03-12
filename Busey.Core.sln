@@ -7,10 +7,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Busey.Core", "Busey.Core\Bu
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Busey.Core.RabbitMq", "Busey.Core.RabbitMq\Busey.Core.RabbitMq.csproj", "{96CFF2E0-9864-4B1F-A009-E6D08D593043}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Busey.Core.RabbitMq.UnitTests", "Busey.Core.RabbitMq.UnitTests\Busey.Core.RabbitMq.UnitTests.csproj", "{72F25C45-BB98-4C36-8153-0F02CCD88C1E}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Busey.Core.UnitTests", "Busey.Core.UnitTests\Busey.Core.UnitTests.csproj", "{988C153C-51F6-4306-AC34-F8B94756DAA1}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -25,14 +21,6 @@ Global
 		{96CFF2E0-9864-4B1F-A009-E6D08D593043}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{96CFF2E0-9864-4B1F-A009-E6D08D593043}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{96CFF2E0-9864-4B1F-A009-E6D08D593043}.Release|Any CPU.Build.0 = Release|Any CPU
-		{72F25C45-BB98-4C36-8153-0F02CCD88C1E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{72F25C45-BB98-4C36-8153-0F02CCD88C1E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{72F25C45-BB98-4C36-8153-0F02CCD88C1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{72F25C45-BB98-4C36-8153-0F02CCD88C1E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{988C153C-51F6-4306-AC34-F8B94756DAA1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{988C153C-51F6-4306-AC34-F8B94756DAA1}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{988C153C-51F6-4306-AC34-F8B94756DAA1}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{988C153C-51F6-4306-AC34-F8B94756DAA1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
