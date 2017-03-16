@@ -77,9 +77,9 @@ namespace Busey.Core.RabbitMq
             _channel.Dispose();
         }
 
-        public void Publish<T>(T message)
+        public void Publish<T>(T message, Action<IEnumerable<T>> aggregator)
         {
-
+            var type = typeof(T);
             var responseQueue = typeof(T).ToQueue();
             var body = message.ToMessage();
             var correlationId = Guid.NewGuid().ToString();
@@ -93,23 +93,29 @@ namespace Busey.Core.RabbitMq
                 var basicConsumer = new EventingBasicConsumer(_channel);
                 basicConsumer.Received += (sender, args) =>
                 {
-                    var quorum = _quorums.First(x => x.Item1 == typeof(T));
+                    var quorum = _quorums.Where(x => x.Item1 == type).Select(x => x.Item2).First();
+                    if (quorum == 0)
+                    {
+                        throw new Exception("No Quorum Supplied");
+                    }
+
                     var response = args.Body.Convert<T>();
-                
-                    _responses.Add(new Tuple<Type, object>(typeof(T), response));
-                    if(responses.Count >= qu)
+
+                    _responses.Add(new Tuple<Type, object>(type, response));
+                    var responseCount = _responses.Where(x => x.Item1 == type).Count();
+                    if(responseCount == quorum)
+                    {
+                        var responses = _responses.Where(x => x.Item1 == type).Select(x => x.Item2).ToList();
+                        aggregator(responses as List<T>);
+                    }
                 };
                 return basicConsumer;
             };
             _handlers.Add(new Tuple<string, Func<IModel, EventingBasicConsumer>>(responseQueue, consumer));
         }
 
-        public void RegisterAggregator<T>(Action<T> action)
-        {
 
-        }
-
-        public void RegisterBroadcastHandler<T, TResult>(Func<T, TResult> action, string recieveQueue, Dictionary<string, object> arguments)
+        public void RegisterBroadcastHandler<T, TResult>(Func<T, TResult> action, string recieveQueue)
         {
             Func<IModel, EventingBasicConsumer> consumer = (channel) =>
             {

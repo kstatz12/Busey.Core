@@ -8,8 +8,10 @@ namespace Busey.Core.Broadcaster
         void Init(IHost host);
         void Start();
         void Stop();
-        void Publish<T>(T message, Dictionary<string, object> arguments = null);
-        void RegisterBroadcastHandler<T, Tresult>(Func<T, Tresult> action, Dictionary<string, object> arguments = null);
-        void RegisterAggregator<T>(Func<IEnumerable<T>, T> aggregator, Dictionary<string, object> arguments = null);
+        void RegisterExchange(string exchange);
+        void RegisterQueue(string queue);
+        void RegisterQuorum(Type type, int quorum);
+        void Publish<T>(T message, Action<IEnumerable<T>> aggregator);
+        void RegisterBroadcastHandler<T, TResult>(Func<T, TResult> action, string recieveQueue);
     }
 }
