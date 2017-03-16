@@ -5,8 +5,7 @@ using Busey.Core.Event;
 using RabbitMQ.Client;
 using System.Collections.Generic;
 using RabbitMQ.Client.Events;
-using Busey.Core.Messaging;
-using System.Linq;
+using Busey.Core.RabbitMq.Interfaces;
 
 namespace Busey.Core.RabbitMq
 {
@@ -17,10 +16,14 @@ namespace Busey.Core.RabbitMq
 
         private readonly List<Tuple<string, Func<IModel, EventingBasicConsumer>>> _handlers;
         private ConnectionFactory _factory;
+        private IEmitter _emitter;
+        private IConsumer _consumer;
 
-        public RabbitMqBus()
+        public RabbitMqBus(IEmitter emitter, IConsumer consumer)
         {
             _handlers = new List<Tuple<string, Func<IModel, EventingBasicConsumer>>>();
+            _emitter = emitter ;
+            _consumer = consumer;
         }
 
         public void Init(IHost host)
@@ -41,11 +44,11 @@ namespace Busey.Core.RabbitMq
         {
             if (args == null)
             {
-                BasicEmit(@event, _channel);
+                _emitter.BasicEmit(@event, _channel, _connection);
             }
             else
             {
-                AdvancedEmit(args, @event, _channel);
+                _emitter.AdvancedEmit(args, @event, _channel, _connection);
             }
         }
 
@@ -53,24 +56,26 @@ namespace Busey.Core.RabbitMq
         {
             if(args == null)
             {
-                BasicEmit(command, _channel);
+                _emitter.BasicEmit(command, _channel, _connection);
             }
             else
             {
-                AdvancedEmit(args, command, _channel);
+                _emitter.AdvancedEmit(args, command, _channel, _connection);
             }
         }
 
         public void RegisterHandler<T>(Action<T> action, Dictionary<string, object> args = null)
         {
+            Tuple<string, Func<IModel, EventingBasicConsumer>> handler;
             if(args == null)
             {
-                BasicConsume(action);
+                handler = _consumer.BasicConsume(action);
             }
             else
             {
-                AdvancedConsume(action, args);
+                handler = _consumer.AdvancedConsume(action, args);
             }
+            _handlers.Add(handler);
         }
 
         public void Start()
@@ -87,119 +92,6 @@ namespace Busey.Core.RabbitMq
         {
             _connection.Dispose();
             _channel.Dispose();
-        }
-
-        private void InitQos(IModel channel, ushort prefetch = 1, bool global = false)
-        {
-            channel.BasicQos(0, prefetch, global);
-        }
-
-        private void AdvancedEmit<T>(Dictionary<string, object> args, T message, IModel channel)
-        {
-            var exchange = ConfigureExchange(args, channel);
-            var routingKey = ConfigureRoutingKey(args);
-            var body = message.ToMessage();
-            var properties = GetBasicProperties();
-            channel.BasicPublish(exchange: exchange, routingKey: routingKey, basicProperties: properties, body: body);
-        }
-
-        private void BasicEmit<T>(T message, IModel channel)
-        {
-            var queueName = typeof(T).ToQueue().CreateQueue(channel);
-            var body = message.ToMessage();
-            var properties = GetBasicProperties();
-            if (_connection.IsOpen)
-            {
-                _channel.BasicPublish("", queueName, false, properties, body);
-            }
-        }
-
-        private void AdvancedConsume<T>(Action<T> action, Dictionary<string, object> args)
-        {
-            var queueName = GetAdvancedQueueName(args, typeof(T));
-            Func<IModel, EventingBasicConsumer> consumer = (channel) =>
-            {
-                queueName.CreateQueue(channel);
-                var exchange = ConfigureExchange(args, channel);
-                var routingKey = ConfigureRoutingKey(args);
-                BindQueue(queueName, exchange, routingKey, channel);
-                var basicConsumer = new EventingBasicConsumer(channel);
-                var prefetch = GetPrefetch(args);
-                InitQos(channel, prefetch);
-                basicConsumer.Received += (sender, arguments) =>
-                {
-                    var body = arguments.Body.Convert<T>();
-                    action(body);
-                    channel.BasicAck(arguments.DeliveryTag, false);
-                };
-                return basicConsumer;
-            };
-            _handlers.Add(new Tuple<string, Func<IModel, EventingBasicConsumer>>(queueName, consumer));
-        }
-
-        private void BasicConsume<T>(Action<T> action)
-        {
-            var queueName = typeof(T).ToQueue();
-            Func<IModel, EventingBasicConsumer> consumer = (channel) =>
-            {
-                queueName.CreateQueue(channel);
-                var basicConsumer = new EventingBasicConsumer(channel);
-                InitQos(channel);
-                basicConsumer.Received += (sender, args) => {
-                    var body = args.Body.Convert<T>();
-                    action(body);
-                    channel.BasicAck(args.DeliveryTag, false);
-                };
-                return basicConsumer;
-            };
-            _handlers.Add(new Tuple<string, Func<IModel, EventingBasicConsumer>>(queueName, consumer));
-        }
-
-        private static string ConfigureExchange(Dictionary<string, object> args, IModel channel)
-        {
-            var exchangeName = args.Where(x => x.Key.ToLower().Equals("exchangename")).Select(x=>x.Value).FirstOrDefault().ToString();
-            var exchangeType = args.Where(x => x.Key.ToLower().Equals("exchangetype")).Select(x => x.Value).FirstOrDefault().ToString();
-
-            if(!string.IsNullOrEmpty(exchangeName) && !string.IsNullOrEmpty(exchangeType))
-            channel.ExchangeDeclare(exchangeName, exchangeType, durable: true);
-
-            return exchangeName;
-        }
-
-        private static string ConfigureRoutingKey(Dictionary<string, object> args)
-        {
-            return args.Where(x => x.Key.ToLower().Equals("routingkey")).Select(x => x.Value).FirstOrDefault().ToString();
-        }
-        
-        private IBasicProperties GetBasicProperties()
-        {
-            var properties = _channel.CreateBasicProperties();
-            properties.Persistent = true;
-            return properties;
-        }
-        
-        private void BindQueue(string queue, string exchange, string routingKey, IModel channel)
-        {
-            channel.QueueBind(queue, exchange, routingKey);
-        }
-
-        private static ushort GetPrefetch(Dictionary<string, object> args)
-        {
-            var prefetchRaw = args.Where(x => x.Key.ToLower().Equals("prefetch"))
-                                       .Select(x => x.Value)
-                                       .FirstOrDefault();
-            if (!ushort.TryParse(prefetchRaw.ToString(), out ushort prefetch))
-            {
-                prefetch = 1;
-            }
-            return prefetch;
-        }
-
-        private static string GetAdvancedQueueName(Dictionary<string, object> args, Type t)
-        {
-            var queue =
-                args.Where(x => x.Key.ToLower().Equals("queuename")).Select(x => x.Value).FirstOrDefault().ToString();
-            return string.IsNullOrEmpty(queue) ? t.ToQueue() : queue;
         }
 
         public void Dispose()

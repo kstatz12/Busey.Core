@@ -9,8 +9,8 @@ namespace Busey.Core.Bus
     {
         void Start();
         void Init(IHost host);
-        void Publish<T>(T @event, Dictionary<string, object> args = null) where T : IEvent;
-        void Send<T>(T command, Dictionary<string, object> args = null) where T : ICommand;
-        void RegisterHandler<T>(Action<T> action, Dictionary<string, object> args = null);
+        void Publish<T>(T @event, Dictionary<string, object> args) where T : IEvent;
+        void Send<T>(T command, Dictionary<string, object> args) where T : ICommand;
+        void RegisterHandler<T>(Action<T> action, Dictionary<string, object> args);
     }
 }
