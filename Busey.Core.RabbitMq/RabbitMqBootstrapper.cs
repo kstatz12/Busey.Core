@@ -11,7 +11,9 @@ namespace Busey.Core.RabbitMq
 
         public IBootstrapper Init(IHost host)
         {
-            _bus = new RabbitMqBus();
+            var rabbitEmitter = new RabbitEmitter();
+            var rabbitConsumer = new RabbitConsumer();
+            _bus = new RabbitMqBus(rabbitEmitter, rabbitConsumer);
             _bus.Init(host);
             return this;
         }

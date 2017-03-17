@@ -16,8 +16,8 @@ namespace Busey.Core.RabbitMq
 
         private readonly List<Tuple<string, Func<IModel, EventingBasicConsumer>>> _handlers;
         private ConnectionFactory _factory;
-        private IEmitter _emitter;
-        private IConsumer _consumer;
+        private readonly IEmitter _emitter;
+        private readonly IConsumer _consumer;
 
         public RabbitMqBus(IEmitter emitter, IConsumer consumer)
         {
@@ -66,15 +66,7 @@ namespace Busey.Core.RabbitMq
 
         public void RegisterHandler<T>(Action<T> action, Dictionary<string, object> args = null)
         {
-            Tuple<string, Func<IModel, EventingBasicConsumer>> handler;
-            if(args == null)
-            {
-                handler = _consumer.BasicConsume(action);
-            }
-            else
-            {
-                handler = _consumer.AdvancedConsume(action, args);
-            }
+            var handler = args == null ? _consumer.BasicConsume(action) : _consumer.AdvancedConsume(action, args);
             _handlers.Add(handler);
         }
 
